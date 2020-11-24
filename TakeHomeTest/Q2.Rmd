@@ -1,0 +1,179 @@
+---
+title: "Q2"
+output: html_notebook
+---
+
+```{r}
+setwd("~/R/MATH551/TakeHomeTest")
+library(tidyverse)
+load("./testData.Rdata")
+```
+
+# e
+```{r}
+ll_e <- function(b, datavec) {
+
+  z <- sum(
+        log(
+            (b * (10^b)) / (datavec^(b + 1))
+          )
+        )
+
+  return(z)
+}
+
+
+n <- length(parrot)
+beta_hat <- n / (sum(log(parrot)) - n * log(10))
+Io <- n / (beta_hat^2)
+se <- Io^(-1/2)
+W <- (beta_hat - 5) / se
+p <- 1 - pnorm(W)
+p
+```
+
+# f
+```{r}
+set.seed(1)
+nboot <- 10000
+newBeta <- rep(0, nboot)
+n <- length(parrot)
+for (i in 1:nboot) {
+  newData <- sample(parrot, n, replace = T)
+  newBeta[i] <-n / (sum(log(newData)) - n * log(10))
+}
+seBeta <- sd(newBeta)
+print(seBeta)
+ciBeta <- quantile(newBeta, c(0.025, 0.975))
+print(ciBeta)
+```
+
+```{r}
+n_ll_e <- function(b, datavec) {
+
+  z <- sum(
+        log(
+            (b * (10^b)) / (datavec^(b + 1))
+          )
+        )
+
+  return(-z)
+}
+
+set.seed(1)
+nboot <- 5000
+newBeta <- rep(0, nboot)
+n <- length(parrot)
+for (i in 1:nboot) {
+  newData <- sample(parrot, n, replace = T)
+  newBeta[i] <- optim(1, n_ll_e, method = "Brent", lower = 1, upper = 20, data = newData)$par
+}
+
+# hist(newLambda_ii)
+seBeta <- sd(newBeta)
+ciLambda_ii <- quantile(newBeta, c(0.025, 0.975))
+seBeta
+ciLambda_ii
+```
+
+# g
+## ii
+```{r}
+set.seed(1)
+nboot <- 10000
+newGamma <- rep(0, nboot)
+n <- length(parrot)
+for (i in 1:nboot) {
+  newData <- sample(parrot, n, replace = T)
+  newGamma[i] <- sqrt(n / (sum(log(newData)) - n * log(10)))
+}
+seGamma <- sd(newGamma)
+print(seGamma)
+ciGamma <- quantile(newGamma, c(0.025, 0.975))
+print(ciGamma)
+```
+
+# h
+```{r}
+ll <- function(para, datavec) {
+  # alpha:para[1]
+  # beta:para[2]
+  a <- para[1]
+  b <- para[2]
+  z <- sum(
+    log(
+      (b * a^b) / (datavec^(b+1))
+    )
+  )
+  return(-z)
+}
+
+fit_h <- optim(c(10, 5), ll, method = "Nelder-Mead", datavec = parrot, hessian = T)
+fit_h
+```
+# j
+```{r}
+set.seed(1)
+nboot <- 5000
+newAlpha <- rep(0, nboot)
+newBeta <- rep(0, nboot)
+n <- length(parrot)
+
+for (i in 1:nboot) {
+  newData <- (runif(n) * (1.592*10^56)^53)^(-1/53)
+  fit_j <- optim(c(10, 5), ll, method = "Nelder-Mead", datavec = newData, hessian = T)
+  newAlpha[i] <- fit_j$par[1]
+  newBeta[i] <- fit_j$par[2]
+
+}
+
+# hist(newLambda_i)
+seAlpha <- sd(newAlpha)
+cat(" seAlpha: ", seAlpha, "\n")
+
+ciAlpha <- quantile(newAlpha, c(0.025, 0.975))
+cat("ciAlpha: [", ciAlpha[1], ",", ciAlpha[2], "]\n", sep = "")
+```
+
+# k
+```{r}
+set.seed(2)
+nboot <- 5000
+newAlpha <- rep(0, nboot)
+newBeta <- rep(0, nboot)
+n <- length(parrot)
+
+for (i in 1:nboot) {
+  newData <- sample(parrot, n, replace = T)
+  fit_j <- optim(c(10, 5), ll, method = "Nelder-Mead", datavec = newData, hessian = T)
+  newAlpha[i] <- fit_j$par[1]
+  newBeta[i] <- fit_j$par[2]
+
+}
+
+# hist(newLambda_i)
+seAlpha <- sd(newAlpha)
+cat(" seAlpha: ", seAlpha, "\n")
+
+ciAlpha <- quantile(newAlpha, c(0.025, 0.975))
+cat("ciAlpha: [", ciAlpha[1], ",", ciAlpha[2], "]\n", sep = "")
+```
+
+```{r}
+#X = runif(10, min = -3, max = 3)
+#Y = runif(10, min = -3, max = 3)
+standard_normal_rand <- function() {
+    while(TRUE){
+        X = runif(1, min = -3.0, max = 3.0)
+        Y = runif(1, min = 0, max = 0.5)
+        if (Y < pnorm(X)){
+            return(X)
+        }
+    }
+}
+z <- rep(0, 100000)
+for (i in 1:100000) {
+  z[i] <- standard_normal_rand()
+}
+hist(z)
+```

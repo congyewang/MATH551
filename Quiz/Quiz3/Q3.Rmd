@@ -1,0 +1,136 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r eval=FALSE}
+library(tidyverse)
+setwd("~/R/MATH551/Quiz/Quiz3/")
+load("../M551Quiz2018.Rdata")
+source("../hessian.R")
+```
+
+# i
+```{r}
+negll_seeds_i <- function(theta, datavec, cov, nTrials, choice = 1) {
+  # Log-Likelihood Function
+  # alpha = theta[1]
+  # beta = theta[2]
+  # p = Psi(alpha + beta * zi)
+  alpha <- theta[1]
+  beta <- theta[2]
+  p <- pnorm(alpha + beta * cov)
+
+  z <- sum(dbinom(datavec, nTrials, p, log = T))
+  
+  if (choice > 0) {
+
+    return(z)
+
+  } else {
+
+    return(-z)
+
+  }
+
+}
+
+# Verify
+theta_i <- c(-0.8, 0.2)
+varify_value_i <- negll_seeds_i(theta_i, seeds$Germinated, seeds$Fertiliser, 10)
+
+# Find Maximise
+fit_i <- optim(c(-1, 0.1), negll_seeds_i, method = "Nelder-Mead", datavec = seeds$Germinated, cov = seeds$Fertiliser, nTrials = 10, choice = -1, hessian = T)
+
+# Print Results
+cat(" alpha:", fit_i$par[1], "\n", "beta:", fit_i$par[2], "\n", "value:", -fit_i$value)
+```
+
+# ii
+```{r}
+negll_seeds_ii <- function(alpha, datavec, cov, nTrials, choice = 1) {
+  # Log-Likelihood Function
+  # beta = 0
+  p <- pnorm(alpha)
+
+  z <- sum(dbinom(datavec, nTrials, p, log = T))
+  
+  if (choice > 0) {
+
+    return(z)
+
+  } else {
+
+    return(-z)
+
+  }
+
+}
+
+fit_ii <- optim(-1, negll_seeds_ii, method = "Brent", lower = -1, upper = 1, datavec = seeds$Germinated, cov = seeds$Fertiliser, nTrials = 10, choice = -1, hessian = TRUE)
+p_ii <- pnorm(fit_ii$par)
+print(p_ii)
+```
+
+# iii
+```{r}
+alpha_iii <- seq(-1, -0.1, length = 500)
+beta_iii <- seq(0.1, 1, length = 500)
+levels <- -c(0:7)
+fllh <- matrix(0, nrow = length(alpha_iii), ncol = length(beta_iii))
+
+# Likelihood-Ratio Test
+W <- 2 * (negll_seeds_i(fit_i$par, datavec = seeds$Germinated, cov = seeds$Fertiliser, nTrials = 10) - negll_seeds_i(c(fit_ii$par, 0), datavec = seeds$Germinated, cov = seeds$Fertiliser, nTrials = 10))
+W
+```
+
+# iv
+```{r}
+pvalue <- 1 - pchisq(W, df = 1)
+pvalue
+```
+
+# v
+```{r}
+# Test alpha using likelihood-ratio test
+W_alpha_ratio <- 2 * (
+  negll_seeds_i(fit_i$par, datavec = seeds$Germinated, cov = seeds$Fertiliser, nTrials = 10) - 
+  negll_seeds_i(c(fit_ii$par, fit_i$par[2]), datavec = seeds$Germinated, cov = seeds$Fertiliser, nTrials = 10))
+
+cat("W_alpha_ratio:", W_alpha_ratio, "\n")
+
+p_alpha_ratio <- 1 - pchisq(W_alpha_ratio, df=1)
+cat("p_alpha_ratio:", p_alpha_ratio, "\n")
+
+# Test alpha using likelihood-ratio test
+W_beta_ratio <- 2 * (
+  negll_seeds_i(fit_i$par, datavec = seeds$Germinated, cov = seeds$Fertiliser, nTrials = 10) - 
+  negll_seeds_i(c(fit_i$par[1], 0), datavec = seeds$Germinated, cov = seeds$Fertiliser, nTrials = 10))
+
+cat("W_beta_ratio:", W_beta_ratio, "\n")
+
+p_beta_ratio <- 1 - pchisq(W_beta_ratio, df=1)
+cat("p_beta_ratio:", p_beta_ratio, "\n")
+```
+
+# vi
+```{r}
+# Hessian
+H <- fit_i$hessian
+covar <- solve(H)
+# Stand Errors
+SEs <- sqrt(diag(covar))
+# Wald 95% CIs
+ci_alpha <- fit_i$par[1] + 1.96 * c(-1,1) * SEs[1]
+ci_beta <- fit_i$par[2] + 1.96 * c(-1,1) * SEs[2]
+
+ci_beta
+```
+
+# vii
+```{r}
+pnorm(sum(fit_i$par*c(1,4)))^10
+```
+
+
+

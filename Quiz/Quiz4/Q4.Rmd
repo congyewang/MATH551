@@ -1,0 +1,125 @@
+---
+title: "Q4"
+author: "Congye"
+date: "10/27/2020"
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+setwd("~/R/MATH551/Quiz/Quiz4/")
+load("../M551Quiz2018.Rdata")
+source("../hessian.R")
+```
+# log-likelihood function
+```{r}
+caterpillar_negproflik <- function(lambda, data, choice = 1) {
+  # if you would like to return negative result, then you can rewrite as "choice = -1".
+  z <- sum(
+    log(
+      (factorial(data + lambda - 1) / (factorial(data) * factorial(lambda - 1))) * ((1 - lambda / (mean(data) + lambda))^data) * ((lambda / (mean(data) + lambda))^lambda)
+    )
+  )
+  
+  if (choice > 0) {
+    return(z)
+  }
+  else{
+    return(-z)
+  }
+
+}
+```
+
+# i
+```{r}
+fit_1 <- optim(2, caterpillar_negproflik, method = "Brent", lower = 0.2, upper = 200, data = caterpillars, choice = -1)
+
+set.seed(1)
+nboot <- 5000
+newLambda_i <- rep(0, nboot)
+newP_i <- rep(0, nboot)
+n <- length(caterpillars)
+
+for (i in 1:nboot) {
+
+  newCaterpillars_i <- sample(caterpillars, n, replace = T)
+  newLambda_i[i] <- optim(2, caterpillar_negproflik, method = "Brent", lower = 2, upper = 50, data = newCaterpillars_i, choice = -1, hessian = TRUE)$par
+  newP_i[i] <- newLambda_i[i] / (mean(newCaterpillars_i) + newLambda_i[i])
+
+}
+
+# hist(newLambda_i)
+seLambda_i <- sd(newLambda_i)
+seP_i <- sd(newP_i)
+cat(" seLambda_i: ", seLambda_i, "\n", "seP_i: ", seP_i, "\n\n")
+
+ciLambda_i <- quantile(newLambda_i, c(0.025, 0.975))
+ciP_i <- quantile(newP_i, c(0.025, 0.975))
+cat(" ciLambda_i: [", ciLambda_i[1], ",", ciLambda_i[2], "]\n", " ciP_i: [", ciP_i[1], ",", ciP_i[2], "]\n", sep = "")
+```
+
+# ii
+```{r}
+set.seed(1)
+nboot <- 5000
+newLambda_ii <- rep(0, nboot)
+newP_ii <- rep(0, nboot)
+n <- length(caterpillars)
+
+for (i in 1:nboot) {
+
+  newCaterpillars_ii <- rnbinom(n,5.029,0.793) 
+  newLambda_ii[i] <- optim(2, caterpillar_negproflik, method = "Brent", lower = 2, upper = 50, data = newCaterpillars_ii, choice = -1, hessian = TRUE)$par
+  newP_ii[i] <- newLambda_ii[i] / (mean(newCaterpillars_ii) + newLambda_ii[i])
+
+}
+
+# hist(newLambda_ii)
+seLambda_ii <- sd(newLambda_ii)
+seP_ii <- sd(newP_ii)
+cat(" seLambda_ii:", seLambda_ii, "\n", "seP_ii:", seP_ii, "\n\n")
+
+ciLambda_ii <- quantile(newLambda_ii, c(0.025, 0.975))
+ciP_ii <- quantile(newP_ii, c(0.025, 0.975))
+cat(" ciLambda_ii: [", ciLambda_ii[1], ",", ciLambda_ii[2], "]\n", " ciP_ii: [", ciP_ii[1], ",", ciP_ii[2], "]\n", sep = "")
+```
+
+```{r}
+uniform.loglik <- function(para, data) {
+  # para[1] = lambda
+  # para[2] = p
+
+  z <- sum(
+    lfactorial(data + para[1] - 1) 
+    - lfactorial(data) 
+    - lfactorial(para[1] - 1) 
+    + data * log(1 - para[2]) 
+    + para[1] * log(para[2]))
+
+  return(-z)
+}
+
+set.seed(1)
+nboot <- 5000
+newLambda_test <- rep(0, nboot)
+newP_test <- rep(0, nboot)
+n <- length(caterpillars)
+
+for (i in 1:nboot) {
+
+  newCaterpillars_test <- sample(caterpillars, n, replace = T)
+  fit_test <- optim(c(1, 0.1), uniform.loglik, data = newCaterpillars_test)
+  newLambda_test[i] <- fit_test$par[1]
+  newP_test[i] <- fit_test$par[2]
+
+}
+
+# hist(newLambda_i)
+seLambda_test <- sd(newLambda_test)
+seP_test <- sd(newP_test)
+cat(" seLambda_test: ", seLambda_test, "\n", "seP_test: ", seP_test, "\n\n")
+
+ciLambda_test <- quantile(newLambda_test, c(0.025, 0.975))
+ciP_test <- quantile(newP_test, c(0.025, 0.975))
+cat(" ciLambda_test: [", ciLambda_test[1], ",", ciLambda_test[2], "]\n", " ciP_test: [", ciP_test[1], ",", ciP_test[2], "]\n", sep = "")
+```

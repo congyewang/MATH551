@@ -1,0 +1,87 @@
+---
+title: "Quiz 1 Solution"
+author: "Congye"
+date: "10/13/2020"
+output: pdf_document
+---
+
+- i. With $\Psi = 1$,
+$$logf(x,\mu) = -(x - \mu) - exp\{-(x-\mu)\}$$
+So
+$$\textit{l}(\mu;x_{1},\cdots,x_{n} = n\mu - \sum^{n}_{i = 1}x_{i} - exp(\mu)\sum^{n}_{i=1}exp(-x_{i}))$$
+```{r}
+river <- c(50.4, 49.7, 49.9, 51.1, 49.2, 53.4, 51.1, 49.9, 51.3, 49.6)
+ll_river <- function(theta, datavec) {
+  n=length(datavec)
+  s1=sum(datavec)
+  s2=sum(exp(-datavec))
+  return(n*theta-s1-exp(theta)*s2)
+}
+ll_river(48, river)
+```
+- ii. The score is- ii. The score is u($\mu$) =
+
+$$\frac{\partial}{\partial \mu}\textit{l}(\mu;x_{1},\cdots,x_{n}) = n - exp(\mu)\sum_{i=1}^{n}exp(-x_{i}).$$
+$u(\hat{\mu}) = 0 \Leftrightarrow$
+$$
+\begin{aligned}
+\hat{\mu}  & = logn - log(\sum_{i=1}^{n}exp(-x_{i}))\\
+& = -log(\frac{1}{n}\sum_{i=1}^{n}exp(-x_{i}))
+\end{aligned}
+$$
+```{r}
+n <- length(river)
+s2 <- sum(exp(-river))
+muhat = -log(s2 / n)
+print(muhat)
+```
+
+- iii. 
+$$l_{O}(\mu) = - \frac{\partial}{\partial\mu^{2}} - \frac{\partial}{\partial\mu} = exp(\mu)\sum_{i=1}^{n}exp(-x_{i}).$$
+```{r}
+IObs <- exp(muhat) * s2
+print(IObs)
+```
+This is $n$, which is also obvious from part ii
+
+- iv. $Var[\hat{\mu}] \approx 1/I_{O} = 0.1$
+- v. Test is (a) one-tailed (asking wheter $\mu$ **exceeds** 50).
+- vi. The Wald test statistic is
+$$W = \frac{\hat{\mu} - 50}{se(\hat{\mu})}$$
+```{r}
+W = (muhat - 50) / sqrt(0.1)
+print(W)
+```
+- vii. The p-value is $Pr[Z>W]=Pr[Z>0.3615794]$
+```{r}
+p = 1 - pnorm(W)
+print(p)
+```
+
+- viii. Since $p > 0.05$ we (a) fail to reject the null hypothesis.
+
+- ix. Evaluate the score at $\mu_{0} = 50$
+```{r}
+u_river <- function(theta, datavec) {
+  n = length(datavec)
+  s2 = sum(exp(-datavec))
+  return(n - exp(theta) * s2)
+}
+u <- u_river(50, river)
+u
+```
+
+- x. The $\chi^{2}$-distributed function of the score statistic using the information at $\mu_{0}$ is $U^{2} / I_{O}(\mu_{0})$
+```{r}
+u^2/10
+```
+For 20-21 only, because of an ambiguity in the original version of the question, I am also allowing:
+```{r}
+u / sqrt(10)
+```
+
+- xi. The p-value for the test is
+```{r}
+1 - pchisq(u^2/10, df=1)
+```
+- xii The alternative hypothesis is that (b) $\mu \neq \mu_{0}$
